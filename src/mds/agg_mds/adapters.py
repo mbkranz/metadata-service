@@ -208,9 +208,12 @@ class MPSAdapter(RemoteMetadataAdapter):
             for id in study_ids:
                 try:
                     #get url request put data into datadict
-                    #in icpsr needed to parse an xml file
-                    #data_dict = xmltodict.parse(xmlData)
-                    #results["results"].append(data_dict)
+                    url = f"{mds_url}/{id}"
+                    response = httpx.get(url)
+                    response.raise_for_status()
+
+                    data_dict = json.load(response.text)
+                    results["results"].append(data_dict)
                     pass
                 except httpx.TimeoutException as exc:
                     logger.error(
@@ -257,22 +260,14 @@ class MPSAdapter(RemoteMetadataAdapter):
         for record in data["results"]: #iterate through studies
             item = {}
             #iterate through items in metadata
-            #for key, value in record["OAI-PMH"]["GetRecord"]["record"]["metadata"][
-            #    "oai_dc:dc"
-            #].items():
-
-            #add MPS specific stuff here
-
-            normalized_item = MPSAdapter.addGen3ExpectedFields(
-                item, mappings, keepOriginalFields, globalFieldFilters
-            )
-
+            for key, value in record.items():
+                normalized_item = MPSAdapter.addGen3ExpectedFields(
+                    item, mappings, keepOriginalFields, globalFieldFilters
+                )
             results[item["identifier"]] = {
                 "_guid_type": "discovery_metadata",
                 "gen3_discovery": normalized_item,
             }
-
-
 class ISCPSRDublin(RemoteMetadataAdapter):
     """
     Simple adapter for ICPSR
